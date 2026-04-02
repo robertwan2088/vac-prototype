@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAC 视频 - 我的</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 200px;
+            background-color: #1890ff;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+
+        .logo-area {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .nav-menu {
+            flex: 1;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s;
+            font-size: 14px;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .nav-item.active {
+            background-color: rgba(255,255,255,0.2);
+            font-weight: bold;
+        }
+
+        .nav-item .icon {
+            margin-right: 10px;
+        }
+
+        .user-area {
+            height: 120px;
+            padding: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1890ff;
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+        }
+
+        .user-actions span {
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .user-actions span:hover {
+            opacity: 1;
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            margin-left: 200px;
+            padding: 24px;
+            background-color: #f5f5f5;
+        }
+
+        /* 顶部栏 */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* 用户信息卡片 */
+        .user-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .user-avatar-large {
+            width: 120px;
+            height: 120px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1890ff;
+            font-size: 48px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .user-info-large {
+            flex: 1;
+        }
+
+        .user-name-large {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .user-level {
+            display: inline-block;
+            background-color: #ffd700;
+            color: #333;
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        .user-stats {
+            display: flex;
+            gap: 40px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 功能菜单 */
+        .menu-section {
+            background-color: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+        }
+
+        .menu-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .menu-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .menu-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .menu-icon.purple {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .menu-icon.blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .menu-icon.green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            color: white;
+        }
+
+        .menu-icon.orange {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .menu-icon.pink {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .menu-icon.cyan {
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            color: white;
+        }
+
+        .menu-icon.yellow {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+
+        .menu-icon.gray {
+            background: linear-gradient(135deg, #e0e0e0 0%, #bdbdbd 100%);
+            color: #333;
+        }
+
+        .menu-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* VIP 卡片 */
+        .vip-card {
+            background: linear-gradient(135deg, #ffd700 0%, #ffb347 100%);
+            padding: 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 24px;
+        }
+
+        .vip-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .vip-icon {
+            font-size: 64px;
+        }
+
+        .vip-details h3 {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .vip-details p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .vip-btn {
+            padding: 12px 32px;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .vip-btn:hover {
+            background-color: #555;
+            transform: scale(1.05);
+        }
+
+        /* 列表式菜单 */
+        .list-menu {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid #e8e8e8;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .list-icon {
+            font-size: 24px;
+            margin-right: 16px;
+        }
+
+        .list-label {
+            flex: 1;
+            font-size: 15px;
+        }
+
+        .list-arrow {
+            color: #999;
+        }
+
+        /* 退出按钮 */
+        .logout-btn {
+            width: 100%;
+            padding: 16px;
+            background-color: white;
+            border: 1px solid #ff4d4f;
+            color: #ff4d4f;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-top: 24px;
+        }
+
+        .logout-btn:hover {
+            background-color: #ff4d4f;
+            color: white;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1200px) {
+            .menu-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .user-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .user-stats {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧导航栏 -->
+        <div class="sidebar">
+            <div class="logo-area">
+                VAC 视频
+            </div>
+
+            <div class="nav-menu">
+                <div class="nav-item">
+                    <span class="icon">🏠</span>
+                    <span>首页</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">📹</span>
+                    <span>视频</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">🎁</span>
+                    <span>推广</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">💎</span>
+                    <span>VIP</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">🎉</span>
+                    <span>活动中心</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">❓</span>
+                    <span>帮助中心</span>
+                </div>
+
+                <div class="nav-item">
+                    <span class="icon">💰</span>
+                    <span>资产中心</span>
+                </div>
+
+                <div class="nav-item active">
+                    <span class="icon">👤</span>
+                    <span>我的</span>
+                </div>
+            </div>
+
+            <div class="user-area">
+                <div class="user-avatar">M</div>
+                <div class="user-name">musk</div>
+                <div class="user-actions">
+                    <span>⚙️ 设置</span>
+                    <span>🚪 退出</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="main-content">
+            <!-- 顶部栏 -->
+            <div class="top-bar">
+                <div class="page-title">👤 个人中心</div>
+            </div>
+
+            <!-- 用户信息卡片 -->
+            <div class="user-card">
+                <div class="user-avatar-large">M</div>
+                <div class="user-info-large">
+                    <div class="user-name-large">musk</div>
+                    <div class="user-level">🎖️ VIP 会员</div>
+                    <div style="font-size: 14px; opacity: 0.9; margin-top: 8px;">
+                        会员到期：2026-12-31
+                    </div>
+                </div>
+                <div class="user-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">128</div>
+                        <div class="stat-label">收藏</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">356</div>
+                        <div class="stat-label">观看</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">89</div>
+                        <div class="stat-label">关注</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIP 卡片 -->
+            <div class="vip-card">
+                <div class="vip-info">
+                    <div class="vip-icon">💎</div>
+                    <div class="vip-details">
+                        <h3>开通 VIP 尊享特权</h3>
+                        <p>• 无限观看所有视频，无广告干扰</p>
+                        <p>• 独享 4K 超高清画质</p>
+                        <p>• 专属内容优先观看</p>
+                    </div>
+                </div>
+                <button class="vip-btn">立即开通</button>
+            </div>
+
+            <!-- 功能菜单 -->
+            <div class="menu-section">
+                <div class="section-title">⚡ 快捷功能</div>
+                <div class="menu-grid">
+                    <div class="menu-item">
+                        <div class="menu-icon purple">⭐</div>
+                        <div class="menu-label">我的收藏</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon blue">📜</div>
+                        <div class="menu-label">观看历史</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon green">💰</div>
+                        <div class="menu-label">资产中心</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon orange">🔔</div>
+                        <div class="menu-label">消息通知</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon pink">⚙️</div>
+                        <div class="menu-label">系统设置</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon cyan">🔒</div>
+                        <div class="menu-label">隐私设置</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon yellow">✅</div>
+                        <div class="menu-label">实名认证</div>
+                    </div>
+
+                    <div class="menu-item">
+                        <div class="menu-icon gray">ℹ️</div>
+                        <div class="menu-label">关于我们</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 列表式菜单 -->
+            <div class="list-menu">
+                <div class="list-item">
+                    <span class="list-icon">📱</span>
+                    <span class="list-label">账号与安全</span>
+                    <span class="list-arrow">›</span>
+                </div>
+
+                <div class="list-item">
+                    <span class="list-icon">💳</span>
+                    <span class="list-label">支付管理</span>
+                    <span class="list-arrow">›</span>
+                </div>
+
+                <div class="list-item">
+                    <span class="list-icon">🎁</span>
+                    <span class="list-label">推广中心</span>
+                    <span class="list-arrow">›</span>
+                </div>
+
+                <div class="list-item">
+                    <span class="list-icon">🎫</span>
+                    <span class="list-label">优惠券</span>
+                    <span class="list-arrow">›</span>
+                </div>
+
+                <div class="list-item">
+                    <span class="list-icon">📊</span>
+                    <span class="list-label">数据统计</span>
+                    <span class="list-arrow">›</span>
+                </div>
+
+                <div class="list-item">
+                    <span class="list-icon">❓</span>
+                    <span class="list-label">帮助与反馈</span>
+                    <span class="list-arrow">›</span>
+                </div>
+            </div>
+
+            <!-- 退出按钮 -->
+            <button class="logout-btn">🚪 退出登录</button>
+        </div>
+    </div>
+
+    <script>
+        // 菜单项悬停效果
+        document.querySelectorAll('.menu-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-4px)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // 列表项点击效果
+        document.querySelectorAll('.list-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.style.backgroundColor = '#e8e8e8';
+                setTimeout(() => {
+                    this.style.backgroundColor = 'transparent';
+                }, 200);
+            });
+        });
+
+        // VIP 按钮悬停效果
+        document.querySelector('.vip-btn').addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.05)';
+        });
+
+        document.querySelector('.vip-btn').addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+
+        // 退出按钮点击
+        document.querySelector('.logout-btn').addEventListener('click', function() {
+            if (confirm('确定要退出登录吗？')) {
+                alert('退出登录成功！');
+            }
+        });
+    </script>
+</body>
+</html>

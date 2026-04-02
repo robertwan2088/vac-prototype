@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VAC 平台 - 电脑端原型</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f0f2f5; color: #333; overflow: hidden; height: 100vh; }
+        .app-container { display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: linear-gradient(180deg, #1a1a2e, #16213e, #0f3460); color: #fff; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; }
+        .logo-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #e94560, #c23616); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 18px; }
+        .logo-text { font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+        .sidebar-nav { flex: 1; padding: 16px 0; }
+        .nav-item { display: flex; align-items: center; gap: 14px; padding: 13px 24px; cursor: pointer; font-size: 14.5px; position: relative; color: rgba(255,255,255,0.7); transition: all 0.25s; }
+        .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .nav-item.active { background: rgba(233,69,96,0.2); color: #e94560; }
+        .nav-item.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 4px; height: 24px; background: #e94560; border-radius: 0 4px 4px 0; }
+        .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+        .nav-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 8px 20px; }
+        .sidebar-user { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .user-avatar { width: 36px; height: 36px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; }
+        .user-info { flex: 1; }
+        .user-name { font-size: 13px; font-weight: 600; }
+        .user-id { font-size: 11px; color: rgba(255,255,255,0.5); }
+        .main-content { flex: 1; overflow-y: auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .page-header { background: #fff; padding: 16px 32px; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+        .page-header h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+        .search-box { display: flex; align-items: center; background: #f5f5f5; border-radius: 8px; padding: 8px 16px; width: 320px; }
+        .search-box input { border: none; background: transparent; outline: none; font-size: 14px; flex: 1; margin-left: 8px; }
+        .search-box svg { color: #999; width: 18px; height: 18px; }
+        .page-body { padding: 24px 32px; }
+        .section-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; }
+        .section-title .more { font-size: 13px; color: #999; cursor: pointer; font-weight: 400; }
+        .categories-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 16px; margin-bottom: 32px; }
+        .category-item { background: #fff; border-radius: 12px; padding: 20px 12px; text-align: center; cursor: pointer; transition: all 0.3s; border: 1px solid transparent; }
+        .category-item:hover { border-color: #e94560; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(233,69,96,0.12); }
+        .category-icon { width: 48px; height: 48px; margin: 0 auto 10px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+        .category-item span { font-size: 13px; color: #555; }
+        .movie-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-bottom: 36px; }
+        .movie-card { background: #fff; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; }
+        .movie-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .movie-poster { width: 100%; aspect-ratio: 2/3; display: flex; align-items: center; justify-content: center; font-size: 50px; position: relative; }
+        .score-badge { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #ffd700; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+        .play-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .movie-card:hover .play-overlay { opacity: 1; }
+        .play-icon { width: 48px; height: 48px; background: rgba(233,69,96,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .play-icon svg { color: #fff; width: 20px; height: 20px; margin-left: 2px; }
+        .movie-info { padding: 12px; }
+        .movie-info h4 { font-size: 14px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .movie-info p { font-size: 12px; color: #999; }
+        .video-tabs { display: flex; gap: 4px; background: #fff; border-radius: 10px; padding: 4px; margin-bottom: 24px; width: fit-content; }
+        .video-tab { padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #666; transition: all 0.2s; }
+        .video-tab.active { background: linear-gradient(135deg, #e94560, #c23616); color: #fff; }
+        .video-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .video-card { background: #fff; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.3s; }
+        .video-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.12); }
+        .video-thumb { width: 100%; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; position: relative; font-size: 36px; }
+        .duration { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.75); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .play-ov { position: absolute; inset: 0; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; }
+        .video-card:hover .play-ov { opacity: 1; }
+        .video-meta { padding: 12px; }
+        .video-meta h4 { font-size: 14px; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .video-meta p { font-size: 12px; color: #999; }
+        .promo-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .promo-card { background: #fff; border-radius: 16px; padding: 32px; }
+        .promo-card h3 { font-size: 17px; margin-bottom: 20px; font-weight: 700; }
+        .promo-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+        .stat-box { background: #f8f9fa; border-radius: 12px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 28px; font-weight: 700; color: #e94560; margin-bottom: 4px; }
+        .stat-label { font-size: 13px; color: #999; }
+        .promo-qr { display: flex; flex-direction: column; align-items: center; padding: 24px; }
+        .qr-code { width: 180px; height: 180px; background: #f5f5f5; border: 2px dashed #ddd; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 40px; }
+        .promo-link { background: #f5f5f5; padding: 10px 20px; border-radius: 8px; font-size: 13px; color: #666; word-break: break-all; text-align: center; }
+        .copy-btn { margin-top: 12px; padding: 8px 24px; background: linear-gradient(135deg, #e94560, #c23616); color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+        .team-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+        .team-item:last-child { border: none; }
+        .team-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px; font-weight: 600; }
+        .team-name { font-size: 14px; font-weight: 500; }
+        .team-date { font-size: 12px; color: #999; }
+        .vip-hero { background: linear-gradient(135deg, #2c2c54, #474787); border-radius: 20px; padding: 48px; color: #fff; margin-bottom: 32px; position: relative; overflow: hidden; }
+        .vip-hero h2 { font-size: 28px; margin-bottom: 8px; }
+        .vip-hero p { font-size: 15px; opacity: 0.7; margin-bottom: 24px; }
+        .vip-plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+        .vip-plan { background: #fff; border-radius: 16px; padding: 32px 24px; text-align: center; border: 2px solid transparent; cursor: pointer; transition: all 0.3s; }
+        .vip-plan:hover { border-color: #ffd700; }
+        .vip-plan.popular { border-color: #ffd700; position: relative; }
+        .vip-plan.popular::before { content: '推荐'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #ffd700, #f39c12); color: #1a1a2e; padding: 2px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; }
+        .plan-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+        .plan-price { font-size: 36px; font-weight: 900; color: #e94560; margin-bottom: 4px; }
+        .plan-price span { font-size: 14px; font-weight: 400; color: #999; }
+        .plan-orig { font-size: 13px; color: #ccc; text-decoration: line-through; margin-bottom: 16px; }
+        .plan-btn { display: block; width: 100%; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+        .plan-btn.highlight { background: linear-gradient(135deg, #ffd700, #f39c12); color: #1a1a2e; }
+        .plan-btn.default { background: #f5f5f5; color: #333; }
+        .vip-benefits { background: #fff; border-radius: 16px; padding: 32px; }
+        .vip-benefits h3 { font-size: 18px; margin-bottom: 24px; }
+        .benefits-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .benefit-item { text-align: center; padding: 20px; }
+        .benefit-icon { width: 56px; height: 56px; margin: 0 auto 12px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+        .benefit-item h4 { font-size: 14px; margin-bottom: 4px; }
+        .benefit-item p { font-size: 12px; color: #999; }
+        .activity-card { background: #fff; border-radius: 16px; padding: 24px; display: flex; gap: 24px; cursor: pointer; transition: all 0.3s; margin-bottom: 16px; }
+        .activity-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .activity-cover { width: 200px; height: 140px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 40px; }
+        .activity-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        .activity-info h3 { font-size: 16px; margin-bottom: 8px; }
+        .activity-info p { font-size: 13px; color: #999; line-height: 1.6; margin-bottom: 12px; }
+        .activity-time { font-size: 12px; color: #e94560; }
+        .activity-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; align-self: flex-start; }
+        .activity-status.ongoing { background: #e8f5e9; color: #43a047; }
+        .activity-status.upcoming { background: #fff3e0; color: #ef6c00; }
+        .activity-status.ended { background: #f5f5f5; color: #999; }
+        .help-categories { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+        .help-cat { background: #fff; border-radius: 16px; padding: 28px; cursor: pointer; transition: all 0.3s; }
+        .help-cat:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        .help-icon { font-size: 36px; margin-bottom: 12px; }
+        .help-cat h4 { font-size: 16px; margin-bottom: 6px; }
+        .help-cat p { font-size: 13px; color: #999; }
+        .faq-list { background: #fff; border-radius: 16px; overflow: hidden; }
+        .faq-item { padding: 18px 24px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
+        .faq-item:last-child { border: none; }
+        .faq-item h4 { font-size: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+        .faq-item h4::before { content: 'Q'; display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: #e94560; color: #fff; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .faq-item p { font-size: 13px; color: #666; padding-left: 30px; line-height: 1.6; display: none; }
+        .faq-item.open p { display: block; }
+        .asset-overview { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 36px; color: #fff; margin-bottom: 28px; }
+        .asset-overview h3 { font-size: 15px; opacity: 0.7; margin-bottom: 8px; }
+        .asset-total { font-size: 42px; font-weight: 900; margin-bottom: 20px; }
+        .asset-total span { font-size: 16px; font-weight: 400; opacity: 0.6; }
+        .wallet-tabs { display: flex; gap: 4px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; width: fit-content; margin-bottom: 24px; }
+        .wallet-tab { padding: 8px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; color: rgba(255,255,255,0.6); transition: all 0.2s; }
+        .wallet-tab.active { background: rgba(255,255,255,0.2); color: #fff; }
+        .wallet-info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+        .wallet-stat { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 20px; }
+        .ws-label { font-size: 12px; opacity: 0.6; margin-bottom: 6px; }
+        .ws-value { font-size: 22px; font-weight: 700; }
+        .asset-actions { display: flex; gap: 12px; margin-bottom: 28px; }
+        .asset-btn { padding: 12px 32px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .asset-btn.primary { background: linear-gradient(135deg, #e94560, #c23616); color: #fff; }
+        .asset-btn.secondary { background: rgba(255,255,255,0.1); color: #fff; }
+        .coin-table-wrapper { background: #fff; border-radius: 16px; overflow: hidden; }
+        .coin-table-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .coin-table-header h3 { font-size: 17px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 24px; font-size: 12px; color: #999; font-weight: 500; background: #fafafa; }
+        td { padding: 16px 24px; font-size: 14px; border-bottom: 1px solid #f5f5f5; }
+        tr:last-child td { border: none; }
+        .coin-name { display: flex; align-items: center; gap: 12px; }
+        .coin-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+        .coin-symbol { font-weight: 700; }
+        .coin-full { font-size: 12px; color: #999; }
+        .text-green { color: #43a047; }
+        .text-red { color: #e53935; }
+        .profile-card { background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 20px; padding: 36px; color: #fff; display: flex; align-items: center; gap: 28px; margin-bottom: 28px; }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; border: 3px solid rgba(255,255,255,0.3); }
+        .profile-info h2 { font-size: 24px; margin-bottom: 4px; }
+        .profile-info p { font-size: 14px; opacity: 0.6; margin-bottom: 12px; }
+        .profile-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px; background: linear-gradient(135deg, #ffd700, #f39c12); color: #1a1a2e; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .profile-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .profile-stat { background: #fff; border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; }
+        .ps-value { font-size: 24px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .ps-label { font-size: 13px; color: #999; }
+        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+        .menu-item { background: #fff; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; }
+        .mi-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .mi-text h4 { font-size: 14px; margin-bottom: 2px; }
+        .mi-text p { font-size: 12px; color: #999; }
+        .main-content::-webkit-scrollbar { width: 6px; }
+        .main-content::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">V</div>
+            <div class="logo-text">VAC</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="showPage('home')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                首页
+            </div>
+            <div class="nav-item" onclick="showPage('video')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                视频
+            </div>
+            <div class="nav-item" onclick="showPage('promo')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                推广
+            </div>
+            <div class="nav-item" onclick="showPage('vip')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                VIP
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-item" onclick="showPage('activity')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                活动中心
+            </div>
+            <div class="nav-item" onclick="showPage('help')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                帮助中心
+            </div>
+            <div class="nav-item" onclick="showPage('asset')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="2" y1="9" x2="22" y2="9"/></svg>
+                资产中心
+            </div>
+            <div class="nav-divider"></div>
+            <div class="nav-item" onclick="showPage('my')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                我的
+            </div>
+        </nav>
+        <div class="sidebar-user" onclick="showPage('my')">
+            <div class="user-avatar">U</div>
+            <div class="user-info">
+                <div class="user-name">User_001</div>
+                <div class="user-id">ID: 100866</div>
+            </div>
+        </div>
+    </aside>
+
+    <div class="main-content">
+        <!-- ========== 首页 ========== -->
+        <div id="page-home" class="page active">
+            <div class="page-header">
+                <h1>首页</h1>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="搜索电影、音乐、短视频...">
+                </div>
+            </div>
+            <div class="page-body">
+                <!-- Banner -->
+                <div class="banner-carousel">
+                    <div class="banner-text">
+                        <h2>🎬 热门大片限时免费</h2>
+                        <p>VIP会员专享全站内容免费观看<br>新用户注册即享7天VIP体验</p>
+                        <button class="banner-btn">立即体验</button>
+                    </div>
+                    <div class="banner-image">🎥</div>
+                </div>
+
+                <!-- Categories -->
+                <div class="section-title">内容分类</div>
+                <div class="categories-grid">
+                    <div class="category-item" onclick="showPage('video')">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">🎬</div>
+                        <span>电影</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#9b59b6,#8e44ad);">🎵</div>
+                        <span>音乐</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#3498db,#2980b9);">📱</div>
+                        <span>短视频</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#f39c12,#e67e22);">📺</div>
+                        <span>广告</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085);">🎮</div>
+                        <span>游戏</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#e91e63,#c2185b);">📚</div>
+                        <span>教育</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#607d8b,#455a64);">📰</div>
+                        <span>资讯</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon" style="background:linear-gradient(135deg,#ff9800,#f57c00);">🎭</div>
+                        <span>综艺</span>
+                    </div>
+                </div>
+
+                <!-- Movie Grid -->
+                <div class="section-title">热门电影 <span class="more">查看更多 ›</span></div>
+                <div class="movie-grid">
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#1a1a2e,#2c3e50);">
+                            🎬<div class="score-badge">⭐ 9.2</div>
+                            <div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>星际穿越</h4><p>科幻 / 冒险</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#2c3e50,#e74c3c);">
+                            🎬<div class="score-badge">⭐ 8.8</div>
+                            <div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>盗梦空间</h4><p>科幻 / 动作</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#e74c3c,#f39c12);">
+                            🎬<div class="score-badge">⭐ 9.0</div>
+                            <div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>肖申克的救赎</h4><p>剧情 / 犯罪</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#3498db,#1abc9c);">
+                            🎬<div class="score-badge">⭐ 8.5</div>
+                            <div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>阿凡达2</h4><p>科幻 / 奇幻</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#9b59b6,#e91e63);">
+                            🎬<div class="score-badge">⭐ 8.9</div>
+                            <div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>流浪地球2</h4><p>科幻 / 灾难</p></div>
+                    </div>
+                </div>
+
+                <div class="section-title">音乐推荐 <span class="more">查看更多 ›</span></div>
+                <div class="movie-grid">
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#e91e63,#9c27b0);">
+                            🎵<div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>热门歌单</h4><p>流行 / 华语</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#00bcd4,#009688);">
+                            🎵<div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>欧美经典</h4><p>经典 / 欧美</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#ff5722,#ff9800);">
+                            🎵<div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>轻音乐</h4><p>放松 / 纯音乐</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#4caf50,#8bc34a);">
+                            🎵<div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>说唱新势力</h4><p>说唱 / Hip-Hop</p></div>
+                    </div>
+                    <div class="movie-card">
+                        <div class="movie-poster" style="background:linear-gradient(135deg,#3f51b5,#673ab7);">
+                            🎵<div class="play-overlay"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="movie-info"><h4>民谣精选</h4><p>民谣 / 文艺</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 视频 ========== -->
+        <div id="page-video" class="page">
+            <div class="page-header">
+                <h1>视频</h1>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="搜索视频...">
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="video-tabs">
+                    <div class="video-tab active">全部</div>
+                    <div class="video-tab">电影</div>
+                    <div class="video-tab">音乐</div>
+                    <div class="video-tab">短视频</div>
+                    <div class="video-tab">广告</div>
+                </div>
+                <div class="video-grid">
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#1a1a2e,#34495e);">
+                            🎬<div class="duration">02:15:30</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>终结者：黑暗命运</h4><p>🎬 电影 · 3.2万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">
+                            🎵<div class="duration">04:32</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>Taylor Swift - 新单曲MV</h4><p>🎵 音乐 · 12.5万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#3498db,#2980b9);">
+                            📱<div class="duration">00:45</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>搞笑合集 | 今日最佳</h4><p>📱 短视频 · 8.7万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#f39c12,#e67e22);">
+                            📺<div class="duration">00:30</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>品牌新品发布会</h4><p>📺 广告 · 1.2万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#9b59b6,#8e44ad);">
+                            🎬<div class="duration">01:52:10</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>速度与激情10</h4><p>🎬 电影 · 5.6万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#1abc9c,#16a085);">
+                            🎵<div class="duration">03:18</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>周杰伦 - 最伟大的作品</h4><p>🎵 音乐 · 28.3万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#e91e63,#c2185b);">
+                            📱<div class="duration">01:20</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>美食探店 | 超火火锅</h4><p>📱 短视频 · 4.1万次观看</p></div>
+                    </div>
+                    <div class="video-card">
+                        <div class="video-thumb" style="background:linear-gradient(135deg,#607d8b,#455a64);">
+                            📺<div class="duration">00:15</div>
+                            <div class="play-ov"><div class="play-icon"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21"/></svg></div></div>
+                        </div>
+                        <div class="video-meta"><h4>VAC平台年度宣传片</h4><p>📺 广告 · 9800次观看</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 推广 ========== -->
+        <div id="page-promo" class="page">
+            <div class="page-header"><h1>推广中心</h1></div>
+            <div class="page-body">
+                <div class="promo-layout">
+                    <div class="promo-card">
+                        <h3>📊 推广数据</h3>
+                        <div class="promo-stats">
+                            <div class="stat-box"><div class="stat-value">126</div><div class="stat-label">邀请好友</div></div>
+                            <div class="stat-box"><div class="stat-value">3,580</div><div class="stat-label">累计收益 (USDT)</div></div>
+                            <div class="stat-box"><div class="stat-value">89</div><div class="stat-label">活跃人数</div></div>
+                        </div>
+                        <h3>👥 最近邀请</h3>
+                        <div class="team-list">
+                            <div class="team-item"><div class="team-avatar">A</div><div><div class="team-name">User_A882</div><div class="team-date">2026-04-02 加入</div></div></div>
+                            <div class="team-item"><div class="team-avatar">B</div><div><div class="team-name">User_B221</div><div class="team-date">2026-04-01 加入</div></div></div>
+                            <div class="team-item"><div class="team-avatar">C</div><div><div class="team-name">User_C567</div><div class="team-date">2026-03-30 加入</div></div></div>
+                            <div class="team-item"><div class="team-avatar">D</div><div><div class="team-name">User_D109</div><div class="team-date">2026-03-28 加入</div></div></div>
+                        </div>
+                    </div>
+                    <div class="promo-card">
+                        <h3>🔗 我的推广链接</h3>
+                        <div class="promo-qr">
+                            <div class="qr-code">📱</div>
+                            <p>扫描二维码或复制链接邀请好友</p>
+                            <div class="promo-link">https://vac.com/invite/U100866</div>
+                            <button class="copy-btn">📋 复制链接</button>
+                        </div>
+                        <h3 style="margin-top:28px;">📝 推广规则</h3>
+                        <ul style="font-size:13px;color:#666;line-height:2;padding-left:20px;">
+                            <li>每邀请1位好友注册，奖励 10 USDT</li>
+                            <li>好友首次充值，额外奖励充值的 5%</li>
+                            <li>好友观看广告产生的收益，您可分成 20%</li>
+                            <li>邀请满50人，升级为银牌推广大使</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== VIP ========== -->
+        <div id="page-vip" class="page">
+            <div class="page-header"><h1>VIP会员</h1></div>
+            <div class="page-body">
+                <div class="vip-hero">
+                    <h2>👑 开通VIP，畅享全站内容</h2>
+                    <p>海量影视、音乐、短视频无限观看 · 专属会员权益 · 优先客服</p>
+                    <button class="banner-btn">了解详情</button>
+                </div>
+                <div class="vip-plans">
+                    <div class="vip-plan">
+                        <div class="plan-name">月度VIP</div>
+                        <div class="plan-price">¥29.9<span>/月</span></div>
+                        <div class="plan-orig">原价 ¥49.9/月</div>
+                        <button class="plan-btn default">立即开通</button>
+                    </div>
+                    <div class="vip-plan popular">
+                        <div class="plan-name">季度VIP</div>
+                        <div class="plan-price">¥69.9<span>/季</span></div>
+                        <div class="plan-orig">原价 ¥149.7/季</div>
+                        <button class="plan-btn highlight">立即开通</button>
+                    </div>
+                    <div class="vip-plan">
+                        <div class="plan-name">年度VIP</div>
+                        <div class="plan-price">¥199.9<span>/年</span></div>
+                        <div class="plan-orig">原价 ¥598.8/年</div>
+                        <button class="plan-btn default">立即开通</button>
+                    </div>
+                </div>
+                <div class="vip-benefits">
+                    <h3>✨ VIP专属权益</h3>
+                    <div class="benefits-grid">
+                        <div class="benefit-item"><div class="benefit-icon">🎬</div><h4>全站免费</h4><p>电影、音乐、短视频无限观看</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">🚫</div><h4>免广告</h4><p>观看视频跳过所有广告</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">⚡</div><h4>极速加载</h4><p>专属CDN加速，无缓冲观看</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">💎</div><h4>4K超清</h4><p>支持4K HDR画质</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">📱</div><h4>多端同步</h4><p>手机/电脑/平板无缝切换</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">🎧</div><h4>无损音质</h4><p>音乐支持Hi-Res无损</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">🎁</div><h4>专属福利</h4><p>每月领取VIP专属礼包</p></div>
+                        <div class="benefit-item"><div class="benefit-icon">💬</div><h4>优先客服</h4><p>7x24小时VIP专属客服</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 活动中心 ========== -->
+        <div id="page-activity" class="page">
+            <div class="page-header"><h1>活动中心</h1></div>
+            <div class="page-body">
+                <div class="activity-card">
+                    <div class="activity-cover" style="background:linear-gradient(135deg,#e94560,#c23616);">🎉</div>
+                    <div class="activity-info">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <h3>新用户注册送7天VIP</h3>
+                            <span class="activity-status ongoing">进行中</span>
+                        </div>
+                        <p>新注册用户即可免费领取7天VIP体验，享受全站内容免费观看特权。</p>
+                        <div class="activity-time">活动时间：2026-03-01 至 2026-05-31</div>
+                    </div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-cover" style="background:linear-gradient(135deg,#ffd700,#f39c12);">💰</div>
+                    <div class="activity-info">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <h3>充值USDT送10% Bonus</h3>
+                            <span class="activity-status ongoing">进行中</span>
+                        </div>
+                        <p>活动期间充值USDT，额外赠送充值金额10%的平台币，可用于兑换VIP或观看付费内容。</p>
+                        <div class="activity-time">活动时间：2026-04-01 至 2026-04-30</div>
+                    </div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-cover" style="background:linear-gradient(135deg,#3498db,#2980b9);">🏆</div>
+                    <div class="activity-info">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <h3>邀请好友赢大奖</h3>
+                            <span class="activity-status upcoming">即将开始</span>
+                        </div>
+                        <p>邀请好友注册并完成首次充值，即可参与抽奖。一等奖：年度VIP + 500USDT。</p>
+                        <div class="activity-time">活动时间：2026-04-15 至 2026-05-15</div>
+                    </div>
+                </div>
+                <div class="activity-card">
+                    <div class="activity-cover" style="background:linear-gradient(135deg,#95a5a6,#7f8c8d);">🎊</div>
+                    <div class="activity-info">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                            <h3>春节观影马拉松</h3>
+                            <span class="activity-status ended">已结束</span>
+                        </div>
+                        <p>春节期间连续观看电影打卡7天，即可领取限量版春节礼包。</p>
+                        <div class="activity-time">活动时间：2026-01-25 至 2026-02-10</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 帮助中心 ========== -->
+        <div id="page-help" class="page">
+            <div class="page-header">
+                <h1>帮助中心</h1>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" placeholder="搜索帮助文档...">
+                </div>
+            </div>
+            <div class="page-body">
+                <div class="help-categories">
+                    <div class="help-cat">
+                        <div class="help-icon">🚀</div>
+                        <h4>新手指南</h4>
+                        <p>快速了解平台功能和使用方法</p>
+                    </div>
+                    <div class="help-cat">
+                        <div class="help-icon">💰</div>
+                        <h4>充值与提现</h4>
+                        <p>USDT充值、提现操作说明</p>
+                    </div>
+                    <div class="help-cat">
+                        <div class="help-icon">👑</div>
+                        <h4>VIP会员</h4>
+                        <p>会员权益、开通与续费说明</p>
+                    </div>
+                    <div class="help-cat">
+                        <div class="help-icon">🔗</div>
+                        <h4>推广教程</h4>
+                        <p>如何邀请好友、赚取佣金</p>
+                    </div>
+                    <div class="help-cat">
+                        <div class="help-icon">🔒</div>
+                        <h4>安全中心</h4>
+                        <p>账户安全、密码找回、防骗指南</p>
+                    </div>
+                    <div class="help-cat">
+                        <div class="help-icon">💬</div>
+                        <h4>联系客服</h4>
+                        <p>在线客服、工单提交</p>
+                    </div>
+                </div>
+                <div class="section-title">常见问题</div>
+                <div class="faq-list">
+                    <div class="faq-item" onclick="this.classList.toggle('open')"><h4>如何注册VAC账号？</h4><p>点击首页"注册"按钮，填写手机号并获取验证码，设置密码后即可完成注册。也支持第三方账号快速登录。</p></div>
+                    <div class="faq-item" onclick="this.classList.toggle('open')"><h4>如何充值USDT？</h4><p>进入"资产中心" → 选择"电子钱包"或"灵活钱包" → 点击"充值" → 按照提示完成USDT转账。支持TRC20和ERC20网络。</p></div>
+                    <div class="faq-item" onclick="this.classList.toggle('open')"><h4>VIP会员有哪些权益？</h4><p>VIP会员可享受全站内容免费观看、免广告、4K画质、无损音质、多端同步、专属客服等权益。</p></div>
+                    <div class="faq-item" onclick="this.classList.toggle('open')"><h4>推广佣金如何结算？</h4><p>推广佣金实时计入您的资产账户，可在"资产中心"查看。提现最低金额为10 USDT，T+1结算。</p></div>
+                    <div class="faq-item" onclick="this.classList.toggle('open')"><h4>电子钱包和灵活钱包有什么区别？</h4><p>电子钱包用于平台内消费（购买VIP、付费内容等），灵活钱包支持自由转账和提现到外部钱包。</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 资产中心 ========== -->
+        <div id="page-asset" class="page">
+            <div class="page-header"><h1>资产中心</h1></div>
+            <div class="page-body">
+                <div class="asset-overview">
+                    <h3>资产总览（折合USDT）</h3>
+                    <div class="asset-total">12,580.00 <span>≈ ¥91,234.00</span></div>
+                    <div class="wallet-tabs">
+                        <div class="wallet-tab active" onclick="switchWallet(this, 'electronic')">电子钱包</div>
+                        <div class="wallet-tab" onclick="switchWallet(this, 'flexible')">灵活钱包</div>
+                    </div>
+                    <div class="wallet-info-row" id="wallet-electronic">
+                        <div class="wallet-stat"><div class="ws-label">可用余额</div><div class="ws-value">8,230.50 USDT</div></div>
+                        <div class="wallet-stat"><div class="ws-label">冻结中</div><div class="ws-value">500.00 USDT</div></div>
+                        <div class="wallet-stat"><div class="ws-label">累计充值</div><div class="ws-value">25,000.00 USDT</div></div>
+                    </div>
+                    <div class="wallet-info-row" id="wallet-flexible" style="display:none;">
+                        <div class="wallet-stat"><div class="ws-label">可用余额</div><div class="ws-value">3,849.50 USDT</div></div>
+                        <div class="wallet-stat"><div class="ws-label">冻结中</div><div class="ws-value">0.00 USDT</div></div>
+                        <div class="wallet-stat"><div class="ws-label">累计收益</div><div class="ws-value">1,250.00 USDT</div></div>
+                    </div>
+                    <div class="asset-actions">
+                        <button class="asset-btn primary">充值</button>
+                        <button class="asset-btn secondary">提现</button>
+                        <button class="asset-btn secondary">转账</button>
+                        <button class="asset-btn secondary">交易记录</button>
+                    </div>
+                </div>
+
+                <div class="coin-table-wrapper">
+                    <div class="coin-table-header">
+                        <h3>币种列表</h3>
+                        <span style="font-size:13px;color:#999;">最近更新：2026-04-03 04:30</span>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>币种</th><th>可用余额</th><th>冻结</th><th>价值 (USDT)</th><th>24h涨跌</th><th>操作</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><div class="coin-name"><div class="coin-icon" style="background:linear-gradient(135deg,#26a17b,#1a8c6e);color:#fff;">₮</div><div><div class="coin-symbol">USDT</div><div class="coin-full">Tether USD</div></div></div></td>
+                                <td>12,080.00</td>
+                                <td>500.00</td>
+                                <td>12,080.00</td>
+                                <td><span class="text-green">+0.01%</span></td>
+                                <td><button class="asset-btn primary" style="padding:6px 16px;font-size:12px;">充值</button></td>
+                            </tr>
+                            <tr>
+                                <td><div class="coin-name"><div class="coin-icon" style="background:linear-gradient(135deg,#f7931a,#e8850f);color:#fff;">₿</div><div><div class="coin-symbol">BTC</div><div class="coin-full">Bitcoin</div></div></div></td>
+                                <td>0.0235</td>
+                                <td>0</td>
+                                <td>2,350.00</td>
+                                <td><span class="text-green">+2.35%</span></td>
+                                <td><button class="asset-btn primary" style="padding:6px 16px;font-size:12px;">充值</button></td>
+                            </tr>
+                            <tr>
+                                <td><div class="coin-name"><div class="coin-icon" style="background:linear-gradient(135deg,#627eea,#4a63d2);color:#fff;">Ξ</div><div><div class="coin-symbol">ETH</div><div class="coin-full">Ethereum</div></div></div></td>
+                                <td>0.850</td>
+                                <td>0</td>
+                                <td>3,230.00</td>
+                                <td><span class="text-red">-0.82%</span></td>
+                                <td><button class="asset-btn primary" style="padding:6px 16px;font-size:12px;">充值</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 我的 ========== -->
+        <div id="page-my" class="page">
+            <div class="page-header"><h1>个人中心</h1></div>
+            <div class="page-body">
+                <div class="profile-card">
+                    <div class="profile-avatar">U</div>
+                    <div class="profile-info">
+                        <h2>User_001</h2>
+                        <p>ID: 100866 · 注册于 2026-01-15</p>
+                        <div class="profile-badge">👑 金牌VIP会员</div>
+                    </div>
+                </div>
+                <div class="profile-stats">
+                    <div class="profile-stat"><div class="ps-value">256</div><div class="ps-label">观看次数</div></div>
+                    <div class="profile-stat"><div class="ps-value">42</div><div class="ps-label">收藏内容</div></div>
+                    <div class="profile-stat"><div class="ps-value">18</div><div class="ps-label">评分记录</div></div>
+                    <div class="profile-stat"><div class="ps-value">126</div><div class="ps-label">邀请好友</div></div>
+                </div>
+
+                <div class="menu-grid">
+                    <div class="menu-item" onclick="showPage('asset')">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#e94560,#c23616);">💰</div>
+                        <div class="mi-text"><h4>资产中心</h4><p>钱包、充值、提现</p></div>
+                    </div>
+                    <div class="menu-item" onclick="showPage('vip')">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#ffd700,#f39c12);">👑</div>
+                        <div class="mi-text"><h4>VIP会员</h4><p>会员权益、续费</p></div>
+                    </div>
+                    <div class="menu-item" onclick="showPage('promo')">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#667eea,#764ba2);">🔗</div>
+                        <div class="mi-text"><h4>推广中心</h4><p>邀请好友、佣金</p></div>
+                    </div>
+                    <div class="menu-item">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#1abc9c,#16a085);">📝</div>
+                        <div class="mi-text"><h4>评分记录</h4><p>我的影视评分</p></div>
+                    </div>
+                    <div class="menu-item">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#e91e63,#c2185b);">❤️</div>
+                        <div class="mi-text"><h4>我的收藏</h4><p>收藏的电影和音乐</p></div>
+                    </div>
+                    <div class="menu-item">
+                        <div class="mi-icon" style="background:linear-gradient(135deg,#607d8b,#455a64);">⚙️</div>
+                        <div class="mi-text"><h4>设置</h4><p>账户、隐私、通知</p></div>
+                    </div>
+                </div>
+
+                <div class="section-title">最近评分</div>
+                <div class="rating-card">
+                    <div class="rating-poster" style="background:linear-gradient(135deg,#1a1a2e,#2c3e50);">🎬</div>
+                    <div class="rating-info">
+                        <h4>星际穿越</h4>
+                        <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                        <div class="rating-date">评分于 2026-04-01</div>
+                    </div>
+                </div>
+                <div class="rating-card">
+                    <div class="rating-poster" style="background:linear-gradient(135deg,#2c3e50,#e74c3c);">🎬</div>
+                    <div class="rating-info">
+                        <h4>盗梦空间</h4>
+                        <div class="rating-stars">⭐⭐⭐⭐⭐</div>
+                        <div class="rating-date">评分于 2026-03-28</div>
+                    </div>
+                </div>
+                <div class="rating-card">
+                    <div class="rating-poster" style="background:linear-gradient(135deg,#9b59b6,#e91e63);">🎬</div>
+                    <div class="rating-info">
+                        <h4>流浪地球2</h4>
+                        <div class="rating-stars">⭐⭐⭐⭐</div>
+                        <div class="rating-date">评分于 2026-03-25</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showPage(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + pageId).classList.add('active');
+    document.querySelector('[data-page="' + pageId + '"]')?.classList.add('active');
+}
+
+function switchWallet(tab, type) {
+    document.querySelectorAll('.wallet-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('wallet-electronic').style.display = type === 'electronic' ? 'grid' : 'none';
+    document.getElementById('wallet-flexible').style.display = type === 'flexible' ? 'grid' : 'none';
+}
+
+// Video tabs
+document.querySelectorAll('.video-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.video-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+</script>
+</body>
+</html>
